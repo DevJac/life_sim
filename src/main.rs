@@ -16,6 +16,7 @@ fn main() {
                 winit::event::WindowEvent::CloseRequested
                 | winit::event::WindowEvent::KeyboardInput {
                     device_id: _,
+                    is_synthetic: _,
                     event:
                         winit::event::KeyEvent {
                             physical_key: _,
@@ -27,7 +28,6 @@ fn main() {
                             repeat: _,
                             ..
                         },
-                    is_synthetic: _,
                 } => {
                     event_loop_window_target.exit();
                 }
