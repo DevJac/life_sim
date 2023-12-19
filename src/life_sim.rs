@@ -1,5 +1,49 @@
 use pollster::FutureExt as _;
 
+/// We will use normalized device coordinates (NDC) as our world coordinates,
+/// because NDC is as good a world coordinate system as any other.
+/// This means coordinates between -1 and 1 on both the x and y axis.
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+pub struct Line {
+    a: glam::Vec2,
+    b: glam::Vec2,
+    /// RGB color channels. Each channel should be between 0.0 and 1.0.
+    color: glam::Vec3,
+}
+
+/// Encodes commands to draw the given lines to the given texture. Returns a CommandBuffer.
+pub fn draw_lines(
+    device: &wgpu::Device,
+    lines: &[Line],
+    texture_view: &wgpu::TextureView,
+) -> wgpu::CommandBuffer {
+    let mut command_encoder =
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    {
+        let _render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("rennder pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &texture_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 0.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+    }
+    command_encoder.finish()
+}
+
 pub struct LifeSim {
     // WGPU Stuff
     device: wgpu::Device,
@@ -54,34 +98,11 @@ impl LifeSim {
 
     pub fn draw_line(&self) {
         let surface_texture: wgpu::SurfaceTexture = self.surface.get_current_texture().unwrap();
-        let surface_view: wgpu::TextureView = surface_texture
+        let surface_texture_view: wgpu::TextureView = surface_texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut command_encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-        {
-            let _render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("rennder pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &surface_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 0.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-        }
-        self.queue.submit([command_encoder.finish()]);
+        let draw_lines_command_buffer = draw_lines(&self.device, &[], &surface_texture_view);
+        self.queue.submit([draw_lines_command_buffer]);
         surface_texture.present();
     }
 }
