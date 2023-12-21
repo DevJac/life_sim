@@ -1,14 +1,16 @@
-struct LineVertex {
-    @location(0) position: vec2f,
-}
-
-struct LineInstance {
+struct Line {
     @location(0) a: vec2f,
     @location(1) b: vec2f,
     @location(2) color: vec3f,
 }
 
+@group(0) @binding(0) var<storage, read> lines: array<Line>;
 
+@vertex
+fn vertex_main(@builtin(vertex_index) vertex_index: u32, @builtin(instance_index) instance_index: u32) {}
+
+@fragment
+fn fragment_main() {}
 
 
 // The size of the full low res canvas; e.g., 800 x 600.

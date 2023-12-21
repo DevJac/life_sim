@@ -1,57 +1,14 @@
 use pollster::FutureExt as _;
 
-trait VertexAttributes {
-    fn vertex_attributes() -> &'static [wgpu::VertexAttribute];
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
-struct LineVertex(glam::Vec2);
-
-const LINE_VERTEX_ATTRIBUTES: &[wgpu::VertexAttribute] = &[wgpu::VertexAttribute {
-    format: wgpu::VertexFormat::Float32x2, // glam::Vec2 size = 4 * 2 = 8
-    offset: 0,
-    shader_location: 0,
-}];
-
-impl VertexAttributes for LineVertex {
-    fn vertex_attributes() -> &'static [wgpu::VertexAttribute] {
-        LINE_VERTEX_ATTRIBUTES
-    }
-}
-
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Line {
     a: glam::Vec2,
     b: glam::Vec2,
     /// RGB color channels. Each channel should be between 0.0 and 1.0.
-    color: glam::Vec3,
+    color: glam::Vec4,
 }
 
-const LINE_ATTRIBUTES: &[wgpu::VertexAttribute] = &[
-    wgpu::VertexAttribute {
-        format: wgpu::VertexFormat::Float32x2, // a size = 4 * 2 = 8
-        offset: 0,
-        shader_location: 0,
-    },
-    wgpu::VertexAttribute {
-        format: wgpu::VertexFormat::Float32x2, // b size = 4 * 2 = 8
-        offset: 8,
-        shader_location: 1,
-    },
-    wgpu::VertexAttribute {
-        format: wgpu::VertexFormat::Float32x3, // b size = 4 * 3 = 12
-        offset: 16,
-        shader_location: 2,
-    },
-];
-
-impl VertexAttributes for Line {
-    fn vertex_attributes() -> &'static [wgpu::VertexAttribute] {
-        LINE_ATTRIBUTES
-    }
-}
 /// Encodes commands to draw the given lines to the given texture. Returns a CommandBuffer.
 pub fn draw_lines(
     device: &wgpu::Device,
@@ -66,18 +23,7 @@ pub fn draw_lines(
         vertex: wgpu::VertexState {
             module: &shader_module,
             entry_point: "vertex_main",
-            buffers: &[
-                wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<LineVertex>() as u64,
-                    step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: LineVertex::vertex_attributes(),
-                },
-                wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<Line>() as u64,
-                    step_mode: wgpu::VertexStepMode::Instance,
-                    attributes: Line::vertex_attributes(),
-                },
-            ],
+            buffers: &[],
         },
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::LineList,
@@ -101,40 +47,28 @@ pub fn draw_lines(
         }),
         multiview: None,
     });
-    let line_vertices = [
-        LineVertex(glam::Vec2::new(0.0, 0.0)),
-        LineVertex(glam::Vec2::new(1.0, 1.0)),
-    ];
-    let line_vertices_bytes = bytemuck::bytes_of(&line_vertices);
-    let line_vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("line vertex buffer"),
-        size: line_vertices_bytes.len() as u64,
-        usage: wgpu::BufferUsages::VERTEX,
-        mapped_at_creation: true,
-    });
-    line_vertex_buffer
-        .slice(..)
-        .get_mapped_range_mut()
-        .copy_from_slice(line_vertices_bytes);
-    line_vertex_buffer.unmap();
     let lines_bytes: &[u8] = bytemuck::cast_slice(lines);
-    let line_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+    let line_storage_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("line instance buffer"),
         size: lines_bytes.len() as u64,
-        usage: wgpu::BufferUsages::VERTEX,
+        usage: wgpu::BufferUsages::STORAGE,
         mapped_at_creation: true,
     });
-    line_instance_buffer
+    line_storage_buffer
         .slice(..)
         .get_mapped_range_mut()
         .copy_from_slice(lines_bytes);
-    line_instance_buffer.unmap();
+    line_storage_buffer.unmap();
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("line bind group"),
         layout: &render_pipeline.get_bind_group_layout(0),
         entries: &[wgpu::BindGroupEntry {
-            binding: todo!(),
-            resource: todo!(),
+            binding: 0,
+            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &line_storage_buffer,
+                offset: 0,
+                size: None,
+            }),
         }],
     });
     let mut command_encoder =
@@ -160,6 +94,7 @@ pub fn draw_lines(
             occlusion_query_set: None,
         });
         render_pass.set_pipeline(&render_pipeline);
+        render_pass.set_bind_group(0, &bind_group, &[]);
     }
     command_encoder.finish()
 }
