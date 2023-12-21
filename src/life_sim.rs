@@ -9,13 +9,47 @@ pub struct Line {
     color: glam::Vec4,
 }
 
+fn empty_command_buffer(
+    device: &wgpu::Device,
+    texture_view: &wgpu::TextureView,
+) -> wgpu::CommandBuffer {
+    let mut command_encoder =
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+    {
+        let _render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("empty render pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: texture_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 0.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+    }
+    command_encoder.finish()
+}
+
 /// Encodes commands to draw the given lines to the given texture. Returns a CommandBuffer.
 pub fn draw_lines(
     device: &wgpu::Device,
     preferred_texture_format: wgpu::TextureFormat,
+    world_space_size: glam::Vec2,
     lines: &[Line],
     texture_view: &wgpu::TextureView,
 ) -> wgpu::CommandBuffer {
+    if lines.is_empty() {
+        return empty_command_buffer(device, texture_view);
+    }
     let shader_module = device.create_shader_module(wgpu::include_wgsl!("shaders/line.wgsl"));
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("lines render pipeline"),
@@ -47,29 +81,51 @@ pub fn draw_lines(
         }),
         multiview: None,
     });
-    let lines_bytes: &[u8] = bytemuck::cast_slice(lines);
+    let world_space_size_bytes: &[u8] = bytemuck::bytes_of(&world_space_size);
+    let world_space_size_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("line world space size buffer"),
+        size: 32.max(world_space_size_bytes.len() as u64),
+        usage: wgpu::BufferUsages::UNIFORM,
+        mapped_at_creation: true,
+    });
+    world_space_size_buffer
+        .slice(0..world_space_size_bytes.len() as u64)
+        .get_mapped_range_mut()
+        .copy_from_slice(world_space_size_bytes);
+    world_space_size_buffer.unmap();
+    let line_bytes: &[u8] = bytemuck::cast_slice(lines);
     let line_storage_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("line instance buffer"),
-        size: lines_bytes.len() as u64,
+        label: Some("line storage buffer"),
+        size: 32.max(line_bytes.len() as u64),
         usage: wgpu::BufferUsages::STORAGE,
         mapped_at_creation: true,
     });
     line_storage_buffer
-        .slice(..)
+        .slice(0..line_bytes.len() as u64)
         .get_mapped_range_mut()
-        .copy_from_slice(lines_bytes);
+        .copy_from_slice(line_bytes);
     line_storage_buffer.unmap();
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("line bind group"),
         layout: &render_pipeline.get_bind_group_layout(0),
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                buffer: &line_storage_buffer,
-                offset: 0,
-                size: None,
-            }),
-        }],
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &world_space_size_buffer,
+                    offset: 0,
+                    size: None,
+                }),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &line_storage_buffer,
+                    offset: 0,
+                    size: None,
+                }),
+            },
+        ],
     });
     let mut command_encoder =
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
@@ -77,7 +133,7 @@ pub fn draw_lines(
         let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("lines render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &texture_view,
+                view: texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -95,6 +151,7 @@ pub fn draw_lines(
         });
         render_pass.set_pipeline(&render_pipeline);
         render_pass.set_bind_group(0, &bind_group, &[]);
+        render_pass.draw(0..2, 0..lines.len() as u32);
     }
     command_encoder.finish()
 }
@@ -159,7 +216,34 @@ impl LifeSim {
         let draw_lines_command_buffer = draw_lines(
             &self.device,
             self.preferred_texture_format,
-            &[],
+            glam::Vec2::new(1.0, 1.0),
+            &[
+                Line {
+                    a: glam::Vec2::new(-0.5, -0.5),
+                    b: glam::Vec2::new(-0.5, 0.5),
+                    color: glam::Vec4::new(1.0, 0.0, 0.0, 1.0),
+                },
+                Line {
+                    a: glam::Vec2::new(-0.5, 0.5),
+                    b: glam::Vec2::new(0.5, 0.5),
+                    color: glam::Vec4::new(0.0, 1.0, 0.0, 1.0),
+                },
+                Line {
+                    a: glam::Vec2::new(0.5, 0.5),
+                    b: glam::Vec2::new(0.5, -0.5),
+                    color: glam::Vec4::new(0.0, 0.0, 1.0, 1.0),
+                },
+                Line {
+                    a: glam::Vec2::new(0.5, -0.5),
+                    b: glam::Vec2::new(-0.5, -0.5),
+                    color: glam::Vec4::new(1.0, 1.0, 1.0, 1.0),
+                },
+                Line {
+                    a: glam::Vec2::new(0.0, 0.0),
+                    b: glam::Vec2::new(0.5, 0.5),
+                    color: glam::Vec4::new(1.0, 1.0, 0.0, 1.0),
+                },
+            ],
             &surface_texture_view,
         );
         self.queue.submit([draw_lines_command_buffer]);

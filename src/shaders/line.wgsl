@@ -1,64 +1,34 @@
 struct Line {
-    @location(0) a: vec2f,
-    @location(1) b: vec2f,
-    @location(2) color: vec3f,
+    a: vec2f,
+    b: vec2f,
+    color: vec4f,
 }
 
-@group(0) @binding(0) var<storage, read> lines: array<Line>;
+struct VertexOut {
+    @builtin(position) position: vec4f,
+    @location(0) color: vec4f,
+}
+
+@group(0) @binding(0) var<uniform> world_space_size: vec2f;
+@group(0) @binding(1) var<storage> lines: array<Line>;
 
 @vertex
-fn vertex_main(@builtin(vertex_index) vertex_index: u32, @builtin(instance_index) instance_index: u32) {}
+fn vertex_main(
+    @builtin(vertex_index) vertex_index: u32,
+    @builtin(instance_index) instance_index: u32,
+) -> VertexOut {
+    let line = lines[instance_index];
+    var world_space_vertex: vec2f;
+    if vertex_index == 0u {
+	world_space_vertex = line.a;
+    } else {
+	world_space_vertex = line.b;
+    }
+    let normalized_vertex: vec2f = world_space_vertex / world_space_size;
+    return VertexOut(vec4f(normalized_vertex, 0.0, 1.0), line.color);
+}
 
 @fragment
-fn fragment_main() {}
-
-
-// The size of the full low res canvas; e.g., 800 x 600.
-// struct Camera {
-//     @location(0) top_left: vec2f,
-//     @location(1) width_height: vec2f,
-// };
-// 
-// struct TextureVertex {
-//     @location(0) position: vec3f,
-//     @location(1) uv: vec2f,
-//     @location(2) lower_right: vec3u,
-// };
-// 
-// struct TextureFragment {
-//     @builtin(position) position: vec4f,
-//     @location(1) uv: vec2f,
-//     @location(2) @interpolate(flat) lower_right: vec3u,
-// };
-// 
-// @group(0) @binding(0) var<uniform> camera: Camera;
-// @group(0) @binding(1) var textures_sampler: sampler;
-// @group(0) @binding(2) var textures: texture_2d_array<f32>;
-// 
-// @vertex
-// fn vertex_main(vertex: TextureVertex) -> TextureFragment {
-//     // Adjust coordinates in our world space (e.g., somewhere in the 800 x 600 grid)
-//     // to normalized device coordinates (NDC, e.g., somewhere in the -1 to 1 range).
-//     let ndc = vec4f(
-//         (vertex.position.x - camera.top_left.x) / f32(camera.width_height.x) * 2.0 - 1.0,
-//         (vertex.position.y - camera.top_left.y) / f32(camera.width_height.y) * 2.0 - 1.0,
-//         vertex.position.z,
-//         1.0,
-//     );
-//     return TextureFragment(ndc, vertex.uv, vertex.lower_right);
-// }
-// 
-// @fragment
-// fn fragment_main(fragment: TextureFragment) -> @location(0) vec4f {
-//     let full_dims: vec2u = textureDimensions(textures);
-//     let adjusted_uv = vec2f(
-//         fragment.uv.x * (f32(fragment.lower_right.x) / f32(full_dims.x)),
-//         fragment.uv.y * (f32(fragment.lower_right.y) / f32(full_dims.y)),
-//     );
-//     return textureSample(textures, textures_sampler, adjusted_uv, fragment.lower_right.z);
-// }
-// 
-// @fragment
-// fn fragment_line(fragment: TextureFragment) -> @location(0) vec4f {
-//     return vec4f(1.0, 1.0, 0.0, 1.0);
-// }
+fn fragment_main(@location(0) color: vec4f) -> @location(0) vec4f {
+    return color;
+}
