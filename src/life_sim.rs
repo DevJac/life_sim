@@ -45,11 +45,25 @@ pub fn draw_lines(
     preferred_texture_format: wgpu::TextureFormat,
     world_space_size: glam::Vec2,
     lines: &[Line],
-    texture_view: &wgpu::TextureView,
+    texture: &wgpu::Texture,
 ) -> wgpu::CommandBuffer {
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
     if lines.is_empty() {
-        return empty_command_buffer(device, texture_view);
+        return empty_command_buffer(device, &texture_view);
     }
+    let sample_count = 4;
+    let multisample_texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("line multisample texture"),
+        size: texture.size(),
+        mip_level_count: 1,
+        sample_count,
+        dimension: wgpu::TextureDimension::D2,
+        format: preferred_texture_format,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+    let multisample_texture_view =
+        multisample_texture.create_view(&wgpu::TextureViewDescriptor::default());
     let shader_module = device.create_shader_module(wgpu::include_wgsl!("shaders/line.wgsl"));
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("lines render pipeline"),
@@ -69,7 +83,11 @@ pub fn draw_lines(
             conservative: false,
         },
         depth_stencil: None,
-        multisample: wgpu::MultisampleState::default(),
+        multisample: wgpu::MultisampleState {
+            count: sample_count,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
         fragment: Some(wgpu::FragmentState {
             module: &shader_module,
             entry_point: "fragment_main",
@@ -133,8 +151,8 @@ pub fn draw_lines(
         let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("lines render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: texture_view,
-                resolve_target: None,
+                view: &multisample_texture_view,
+                resolve_target: Some(&texture_view),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.0,
@@ -210,9 +228,6 @@ impl LifeSim {
 
     pub fn draw_line(&self) {
         let surface_texture: wgpu::SurfaceTexture = self.surface.get_current_texture().unwrap();
-        let surface_texture_view: wgpu::TextureView = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
         let draw_lines_command_buffer = draw_lines(
             &self.device,
             self.preferred_texture_format,
@@ -244,7 +259,7 @@ impl LifeSim {
                     color: glam::Vec4::new(1.0, 1.0, 0.0, 1.0),
                 },
             ],
-            &surface_texture_view,
+            &surface_texture.texture,
         );
         self.queue.submit([draw_lines_command_buffer]);
         surface_texture.present();
