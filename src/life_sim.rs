@@ -2,7 +2,7 @@ use pollster::FutureExt as _;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
-pub struct Line {
+struct Line {
     a: glam::Vec2,
     b: glam::Vec2,
     /// RGB color channels. Each channel should be between 0.0 and 1.0.
@@ -40,7 +40,7 @@ fn empty_command_buffer(
 }
 
 /// Encodes commands to draw the given lines to the given texture. Returns a CommandBuffer.
-pub fn draw_lines(
+fn draw_lines(
     device: &wgpu::Device,
     preferred_texture_format: wgpu::TextureFormat,
     world_space_size: glam::Vec2,
