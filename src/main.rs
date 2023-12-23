@@ -38,7 +38,7 @@ fn main() {
                 _ => {}
             },
             winit::event::Event::AboutToWait => {
-                life_sim.draw_line();
+                life_sim.draw_creature();
                 if fps_stats.update() {
                     let fps = 1.0 / fps_stats.mean();
                     let fps_std = fps_stats.std() / fps_stats.mean().powi(2);

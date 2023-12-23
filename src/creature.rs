@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SegmentType {
+pub enum SegmentType {
     Energy,
     Attack,
     Defend,
@@ -7,10 +7,10 @@ enum SegmentType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Segment {
-    a: glam::Vec2,
-    b: glam::Vec2,
-    t: SegmentType,
+pub struct Segment {
+    pub a: glam::Vec2,
+    pub b: glam::Vec2,
+    pub t: SegmentType,
 }
 
 pub struct Creature {
@@ -18,11 +18,17 @@ pub struct Creature {
 }
 
 impl Creature {
-    pub fn new() -> Self {
+    pub fn segments(&self) -> &[Segment] {
+        &self.segments
+    }
+}
+
+impl Default for Creature {
+    fn default() -> Self {
         let mut segments = Vec::with_capacity(15);
         segments.push(Segment {
             a: glam::Vec2::new(0.0, 0.0),
-            b: glam::Vec2::new(1.0, 0.0),
+            b: glam::Vec2::new(0.0, 1.0),
             t: SegmentType::Energy,
         });
         Self { segments }
