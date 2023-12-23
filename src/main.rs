@@ -4,7 +4,7 @@ fn main() {
     env_logger::init();
     let event_loop = winit::event_loop::EventLoop::new().unwrap();
     let window: winit::window::Window = winit::window::Window::new(&event_loop).unwrap();
-    let life_sim = LifeSim::new(window);
+    let mut life_sim = LifeSim::new(window);
     life_sim.configure_surface();
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
     let mut fps_stats = life_sim::fps_stats::FPSStats::new(1.0, 10.0);
