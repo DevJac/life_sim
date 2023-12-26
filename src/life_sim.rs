@@ -3,21 +3,25 @@ use crate::{
     renderer::{Line, Renderer},
 };
 
-fn segment_type_to_color(segment_type: SegmentType) -> glam::Vec3 {
-    match segment_type {
-        SegmentType::Energy => glam::Vec3::new(0.0, 1.0, 0.0),
-        SegmentType::Attack => glam::Vec3::new(1.0, 0.0, 0.0),
-        SegmentType::Defend => glam::Vec3::new(0.0, 0.0, 1.0),
-        SegmentType::Move => glam::Vec3::new(1.0, 1.0, 0.0),
+impl From<SegmentType> for glam::Vec3 {
+    fn from(segment_type: SegmentType) -> Self {
+        match segment_type {
+            SegmentType::Energy => glam::Vec3::new(0.0, 1.0, 0.0),
+            SegmentType::Attack => glam::Vec3::new(1.0, 0.0, 0.0),
+            SegmentType::Defend => glam::Vec3::new(0.0, 0.0, 1.0),
+            SegmentType::Move => glam::Vec3::new(1.0, 1.0, 0.0),
+        }
     }
 }
 
-fn creature_to_lines(creature: &Creature) -> Vec<Line> {
-    creature
-        .segments()
-        .iter()
-        .map(|segment| Line::new(segment.a, segment.b, segment_type_to_color(segment.t)))
-        .collect()
+impl From<Creature> for Vec<Line> {
+    fn from(creature: Creature) -> Self {
+        creature
+            .segments()
+            .iter()
+            .map(|segment| Line::new(segment.a, segment.b, segment.t.into()))
+            .collect()
+    }
 }
 
 pub struct LifeSim {
@@ -38,7 +42,7 @@ impl LifeSim {
 
     pub fn draw_creature(&mut self) {
         let creature = Creature::default();
-        self.renderer.draw_lines(&creature_to_lines(&creature));
+        self.renderer.draw_lines(&Into::<Vec<Line>>::into(creature));
         self.renderer.present();
     }
 }
