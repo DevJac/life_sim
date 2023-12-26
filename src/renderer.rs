@@ -50,7 +50,6 @@ fn empty_command_buffer(
 fn draw_lines(
     device: &wgpu::Device,
     preferred_texture_format: wgpu::TextureFormat,
-    world_space_size: glam::Vec2,
     lines: &[Line],
     texture: &wgpu::Texture,
 ) -> wgpu::CommandBuffer {
@@ -106,6 +105,7 @@ fn draw_lines(
         }),
         multiview: None,
     });
+    let world_space_size = glam::Vec2::new(texture.width() as f32, texture.height() as f32);
     let world_space_size_bytes: &[u8] = bytemuck::bytes_of(&world_space_size);
     let world_space_size_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("line world space size buffer"),
@@ -249,7 +249,6 @@ impl Renderer {
         let draw_lines_command_buffer = draw_lines(
             &self.device,
             self.preferred_texture_format,
-            glam::Vec2::new(1.0, 1.0),
             &self.lines,
             &surface_texture.texture,
         );

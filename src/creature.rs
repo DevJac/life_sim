@@ -28,8 +28,13 @@ impl Default for Creature {
         let mut segments = Vec::with_capacity(15);
         segments.push(Segment {
             a: glam::Vec2::new(0.0, 0.0),
-            b: glam::Vec2::new(0.0, 1.0),
+            b: glam::Vec2::new(0.0, 30.0),
             t: SegmentType::Energy,
+        });
+        segments.push(Segment {
+            a: glam::Vec2::new(0.0, 30.0),
+            b: glam::Vec2::new(30.0, 30.0),
+            t: SegmentType::Attack,
         });
         Self { segments }
     }
