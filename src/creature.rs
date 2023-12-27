@@ -39,3 +39,24 @@ impl Default for Creature {
         Self { segments }
     }
 }
+
+fn dist_from_origin_squared(v: glam::Vec2) -> f32 {
+    v.x.powi(2) + v.y.powi(2)
+}
+
+impl Creature {
+    pub fn radius(&self) -> f32 {
+        let mut radius_squared = 0.0;
+        for segment in self.segments.iter() {
+            let dfos = dist_from_origin_squared(segment.a);
+            if dfos > radius_squared {
+                radius_squared = dfos;
+            }
+            let dfos = dist_from_origin_squared(segment.b);
+            if dfos > radius_squared {
+                radius_squared = dfos;
+            }
+        }
+        radius_squared.sqrt()
+    }
+}
