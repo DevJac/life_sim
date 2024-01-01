@@ -54,6 +54,11 @@ impl Default for Creature {
         segments.push(Segment {
             a: glam::Vec2::new(0.0, 30.0),
             b: glam::Vec2::new(30.0, 30.0),
+            t: SegmentType::Move,
+        });
+        segments.push(Segment {
+            a: glam::Vec2::new(30.0, 30.0),
+            b: glam::Vec2::new(30.0, 0.0),
             t: SegmentType::Attack,
         });
         Self {

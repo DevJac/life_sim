@@ -1,5 +1,7 @@
 use pollster::FutureExt as _;
 
+pub struct Color(pub glam::Vec3);
+
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Line {
@@ -10,8 +12,8 @@ pub struct Line {
 }
 
 impl Line {
-    pub fn new(a: glam::Vec2, b: glam::Vec2, color: glam::Vec3) -> Self {
-        let color = glam::Vec4::new(color.x, color.y, color.z, 1.0);
+    pub fn new(a: glam::Vec2, b: glam::Vec2, color: Color) -> Self {
+        let color = glam::Vec4::new(color.0.x, color.0.y, color.0.z, 1.0);
         Self { a, b, color }
     }
 }

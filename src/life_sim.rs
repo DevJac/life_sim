@@ -1,15 +1,15 @@
 use crate::{
     creature::{Creature, SegmentType},
-    renderer::{Line, Renderer},
+    renderer::{Color, Line, Renderer},
 };
 
-impl From<SegmentType> for glam::Vec3 {
+impl From<SegmentType> for Color {
     fn from(segment_type: SegmentType) -> Self {
         match segment_type {
-            SegmentType::Energy => glam::Vec3::new(0.0, 1.0, 0.0),
-            SegmentType::Attack => glam::Vec3::new(1.0, 0.0, 0.0),
-            SegmentType::Defend => glam::Vec3::new(0.0, 0.0, 1.0),
-            SegmentType::Move => glam::Vec3::new(1.0, 1.0, 0.0),
+            SegmentType::Energy => Color(glam::Vec3::new(0.0, 0.8, 0.0)),
+            SegmentType::Attack => Color(glam::Vec3::new(1.0, 0.0, 0.0)),
+            SegmentType::Defend => Color(glam::Vec3::new(0.0, 0.0, 1.0)),
+            SegmentType::Move => Color(glam::Vec3::new(1.0, 0.9, 0.0)),
         }
     }
 }
