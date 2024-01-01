@@ -23,26 +23,24 @@ pub struct Segment {
 
 impl Segment {
     pub fn length(&self) -> f32 {
-        let x_diff = self.a.x - self.b.x;
-        let y_diff = self.a.y - self.b.y;
-        (x_diff.powi(2) + y_diff.powi(2)).sqrt()
+        self.b.distance(self.a)
     }
 
-    fn max_dist_from_origin_squared(&self) -> f32 {
-        let a_dist = self.a.x.powi(2) + self.a.y.powi(2);
-        let b_dist = self.b.x.powi(2) + self.b.y.powi(2);
+    pub fn max_dist_from_origin_squared(&self) -> f32 {
+        let a_dist = self.a.distance_squared(glam::Vec2::ZERO);
+        let b_dist = self.b.distance_squared(glam::Vec2::ZERO);
         a_dist.max(b_dist)
+    }
+
+    pub fn midpoint(&self) -> glam::Vec2 {
+        (self.b - self.a) / 2.0
     }
 }
 
 pub struct Creature {
-    segments: Vec<Segment>,
-}
-
-impl Creature {
-    pub fn segments(&self) -> &[Segment] {
-        &self.segments
-    }
+    pub segments: Vec<Segment>,
+    pub position: glam::Vec2,
+    pub energy: f32,
 }
 
 impl Default for Creature {
@@ -58,7 +56,11 @@ impl Default for Creature {
             b: glam::Vec2::new(30.0, 30.0),
             t: SegmentType::Attack,
         });
-        Self { segments }
+        Self {
+            segments,
+            position: glam::Vec2::ZERO,
+            energy: 0.0,
+        }
     }
 }
 

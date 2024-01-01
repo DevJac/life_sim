@@ -17,7 +17,7 @@ impl From<SegmentType> for glam::Vec3 {
 impl From<Creature> for Vec<Line> {
     fn from(creature: Creature) -> Self {
         creature
-            .segments()
+            .segments
             .iter()
             .map(|segment| Line::new(segment.a, segment.b, segment.t.into()))
             .collect()
