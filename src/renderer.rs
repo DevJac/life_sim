@@ -246,7 +246,7 @@ impl Renderer {
         self.lines.extend(lines);
     }
 
-    pub fn present(&self) {
+    pub fn present(&mut self) {
         let surface_texture: wgpu::SurfaceTexture = self.surface.get_current_texture().unwrap();
         let draw_lines_command_buffer = draw_lines(
             &self.device,
@@ -256,5 +256,6 @@ impl Renderer {
         );
         self.queue.submit([draw_lines_command_buffer]);
         surface_texture.present();
+        self.lines.clear();
     }
 }

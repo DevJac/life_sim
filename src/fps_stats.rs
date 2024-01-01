@@ -12,6 +12,11 @@ pub struct FPSStats {
     percentile_99: f32,
 }
 
+pub struct Tick {
+    pub frame_time: f32,
+    pub should_log: bool,
+}
+
 impl FPSStats {
     pub fn new(half_life: f32, log_frequency: f32) -> Self {
         Self {
@@ -25,7 +30,7 @@ impl FPSStats {
         }
     }
 
-    pub fn update(&mut self) -> bool {
+    pub fn tick(&mut self) -> Tick {
         let now = Instant::now();
         let frame_time = (now - self.last_render_time).as_secs_f32();
         self.last_render_time = now;
@@ -39,11 +44,15 @@ impl FPSStats {
         if frame_time > self.percentile_99 {
             self.percentile_99 += percentile_step / (1.0 - 0.99);
         }
+        let mut should_log = false;
         if (now - self.last_log_time) > Duration::from_secs_f32(self.log_frequency) {
             self.last_log_time = now;
-            return true;
+            should_log = true;
         }
-        false
+        Tick {
+            frame_time,
+            should_log,
+        }
     }
 
     pub fn mean(&self) -> f32 {

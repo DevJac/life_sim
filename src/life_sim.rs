@@ -14,24 +14,32 @@ impl From<SegmentType> for Color {
     }
 }
 
-impl From<Creature> for Vec<Line> {
-    fn from(creature: Creature) -> Self {
+impl From<&Creature> for Vec<Line> {
+    fn from(creature: &Creature) -> Self {
         creature
             .segments
             .iter()
-            .map(|segment| Line::new(segment.a, segment.b, segment.t.into()))
+            .map(|segment| {
+                Line::new(
+                    creature.position + segment.a,
+                    creature.position + segment.b,
+                    segment.t.into(),
+                )
+            })
             .collect()
     }
 }
 
 pub struct LifeSim {
     renderer: Renderer,
+    creature: Creature,
 }
 
 impl LifeSim {
     pub fn new(window: winit::window::Window) -> Self {
         Self {
             renderer: Renderer::new(window),
+            creature: Creature::default(),
         }
     }
 
@@ -40,9 +48,10 @@ impl LifeSim {
         self.renderer.configure_surface();
     }
 
-    pub fn draw_creature(&mut self) {
-        let creature = Creature::default();
-        self.renderer.draw_lines(&Into::<Vec<Line>>::into(creature));
+    pub fn draw_creature(&mut self, delta_time: f32) {
+        self.creature.update(delta_time);
+        self.renderer
+            .draw_lines(&Into::<Vec<Line>>::into(&self.creature));
         self.renderer.present();
     }
 }

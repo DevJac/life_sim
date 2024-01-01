@@ -40,6 +40,7 @@ impl Segment {
 pub struct Creature {
     pub segments: Vec<Segment>,
     pub position: glam::Vec2,
+    pub momentum: glam::Vec2,
     pub energy: f32,
 }
 
@@ -64,6 +65,7 @@ impl Default for Creature {
         Self {
             segments,
             position: glam::Vec2::ZERO,
+            momentum: glam::Vec2::new(100.0, 0.0),
             energy: 0.0,
         }
     }
@@ -106,5 +108,11 @@ impl Creature {
     pub fn energy_requirement(&self) -> f32 {
         let segment_lengths = self.segment_lengths();
         segment_lengths.attack + segment_lengths.defend + segment_lengths.move_ + self.radius()
+    }
+
+    pub fn update(&mut self, delta_time: f32) {
+        self.position += self.momentum * delta_time;
+        // We use the continuous time exponential growth function: P = P0 e^(kt)
+        self.momentum *= f32::exp(f32::ln(0.8) * delta_time);
     }
 }

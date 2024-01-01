@@ -38,13 +38,14 @@ fn main() {
                 _ => {}
             },
             winit::event::Event::AboutToWait => {
-                life_sim.draw_creature();
-                if fps_stats.update() {
+                let tick = fps_stats.tick();
+                if tick.should_log {
                     let fps = 1.0 / fps_stats.mean();
                     let fps_std = fps_stats.std() / fps_stats.mean().powi(2);
                     let fps_99th = 1.0 / fps_stats.percentile_99();
                     log::info!("FPS: {:.0} ({:.0} ± {:.0})", fps_99th, fps, fps_std);
                 }
+                life_sim.draw_creature(tick.frame_time);
             }
             _ => {}
         })
