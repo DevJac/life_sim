@@ -1,13 +1,11 @@
-use life_sim::life_sim::LifeSim;
+use life_sim::renderer::{Color, Line, Renderer};
 
 fn main() {
     env_logger::init();
     let event_loop = winit::event_loop::EventLoop::new().unwrap();
     let window: winit::window::Window = winit::window::Window::new(&event_loop).unwrap();
-    let mut life_sim = LifeSim::new(window);
-    life_sim.configure_surface();
+    let mut renderer = Renderer::new(window);
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
-    let mut fps_stats = life_sim::fps_stats::FPSStats::new(1.0, 10.0);
     event_loop
         .run(move |event, event_loop_window_target| match event {
             winit::event::Event::WindowEvent {
@@ -32,20 +30,14 @@ fn main() {
                 } => {
                     event_loop_window_target.exit();
                 }
-                winit::event::WindowEvent::Resized(_) => {
-                    life_sim.configure_surface();
-                }
                 _ => {}
             },
             winit::event::Event::AboutToWait => {
-                let tick = fps_stats.tick();
-                if tick.should_log {
-                    let fps = 1.0 / fps_stats.mean();
-                    let fps_std = fps_stats.std() / fps_stats.mean().powi(2);
-                    let fps_99th = 1.0 / fps_stats.percentile_99();
-                    log::info!("FPS: {:.0} ({:.0} ± {:.0})", fps_99th, fps, fps_std);
-                }
-                life_sim.draw_creature(tick.frame_time);
+                renderer.draw_line(Line::new(
+                    glam::Vec2::new(0.0, 0.0),
+                    glam::Vec2::new(10.0, 10.0),
+                    Color(glam::Vec3::new(1.0, 1.0, 1.0)),
+                ));
             }
             _ => {}
         })
