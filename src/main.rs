@@ -7,6 +7,7 @@ fn main() {
     let mut renderer = Renderer::new(window);
     renderer.configure_surface();
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
+    let mut loop_count = 0;
     event_loop
         .run(move |event, event_loop_window_target| match event {
             winit::event::Event::WindowEvent {
@@ -34,11 +35,17 @@ fn main() {
                 _ => {}
             },
             winit::event::Event::AboutToWait => {
+                loop_count += 1;
                 renderer.draw_line(Line::new(
                     glam::Vec2::new(0.0, 0.0),
                     glam::Vec2::new(10.0, 10.0),
                     Color(glam::Vec3::new(1.0, 1.0, 1.0)),
                 ));
+                if loop_count % 10_123 == 0 {
+                    let wgpu_report = renderer.instance.generate_report();
+                    println!("Instance report: {:?}", wgpu_report);
+                    event_loop_window_target.exit();
+                }
             }
             _ => {}
         })
@@ -231,12 +238,13 @@ fn draw_lines(
 
 pub struct Renderer {
     // WGPU Stuff
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    surface: wgpu::Surface,
-    preferred_texture_format: wgpu::TextureFormat,
+    pub instance: wgpu::Instance,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub surface: wgpu::Surface,
+    pub preferred_texture_format: wgpu::TextureFormat,
     // Safety: The window must life longer than its surface. Drop window last.
-    window: winit::window::Window,
+    pub window: winit::window::Window,
 }
 
 impl Renderer {
@@ -256,6 +264,7 @@ impl Renderer {
             *surface.get_capabilities(&adapter).formats.first().unwrap();
         log::debug!("Preferred texture format: {:?}", &preferred_texture_format);
         Self {
+            instance,
             device,
             queue,
             surface,
