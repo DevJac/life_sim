@@ -5,6 +5,7 @@ fn main() {
     let event_loop = winit::event_loop::EventLoop::new().unwrap();
     let window: winit::window::Window = winit::window::Window::new(&event_loop).unwrap();
     let mut renderer = Renderer::new(window);
+    renderer.configure_surface();
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
     event_loop
         .run(move |event, event_loop_window_target| match event {
@@ -38,6 +39,7 @@ fn main() {
                     glam::Vec2::new(10.0, 10.0),
                     Color(glam::Vec3::new(1.0, 1.0, 1.0)),
                 ));
+                renderer.present();
             }
             _ => {}
         })
