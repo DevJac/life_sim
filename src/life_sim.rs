@@ -49,7 +49,7 @@ impl LifeSim {
     }
 
     pub fn draw_creature(&mut self, delta_time: f32) {
-        self.creature.update(delta_time);
+        self.creature.update(delta_time, self.renderer.world_size());
         self.renderer
             .draw_lines(&Into::<Vec<Line>>::into(&self.creature));
         self.renderer.present();

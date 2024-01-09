@@ -107,7 +107,8 @@ fn draw_lines(
         }),
         multiview: None,
     });
-    let world_space_size = glam::Vec2::new(texture.width() as f32, texture.height() as f32);
+    let world_space_size =
+        glam::Vec2::new(texture.width() as f32 / 2.0, texture.height() as f32 / 2.0);
     let world_space_size_bytes: &[u8] = bytemuck::bytes_of(&world_space_size);
     let world_space_size_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("line world space size buffer"),
@@ -236,6 +237,14 @@ impl Renderer {
                 view_formats: vec![],
             },
         );
+    }
+
+    pub fn world_size(&self) -> glam::Vec2 {
+        let window_size = self.window.inner_size();
+        glam::Vec2::new(
+            window_size.width as f32 / 2.0,
+            window_size.height as f32 / 2.0,
+        )
     }
 
     pub fn draw_line(&mut self, line: Line) {
