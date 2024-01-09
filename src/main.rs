@@ -39,7 +39,6 @@ fn main() {
                     glam::Vec2::new(10.0, 10.0),
                     Color(glam::Vec3::new(1.0, 1.0, 1.0)),
                 ));
-                renderer.present();
             }
             _ => {}
         })

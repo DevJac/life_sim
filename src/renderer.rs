@@ -185,7 +185,6 @@ fn draw_lines(
 }
 
 pub struct Renderer {
-    lines: Vec<Line>,
     // WGPU Stuff
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -212,7 +211,6 @@ impl Renderer {
             *surface.get_capabilities(&adapter).formats.get(0).unwrap();
         log::debug!("Preferred texture format: {:?}", &preferred_texture_format);
         Self {
-            lines: Vec::with_capacity(1000),
             device,
             queue,
             surface,
@@ -239,32 +237,15 @@ impl Renderer {
         );
     }
 
-    pub fn world_size(&self) -> glam::Vec2 {
-        let window_size = self.window.inner_size();
-        glam::Vec2::new(
-            window_size.width as f32 / 2.0,
-            window_size.height as f32 / 2.0,
-        )
-    }
-
     pub fn draw_line(&mut self, line: Line) {
-        self.lines.push(line);
-    }
-
-    pub fn draw_lines(&mut self, lines: &[Line]) {
-        self.lines.extend(lines);
-    }
-
-    pub fn present(&mut self) {
         let surface_texture: wgpu::SurfaceTexture = self.surface.get_current_texture().unwrap();
         let draw_lines_command_buffer = draw_lines(
             &self.device,
             self.preferred_texture_format,
-            &self.lines,
+            &[line],
             &surface_texture.texture,
         );
         self.queue.submit([draw_lines_command_buffer]);
         surface_texture.present();
-        self.lines.clear();
     }
 }
